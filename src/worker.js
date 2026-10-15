@@ -148,6 +148,8 @@ async function ingest(env, body) {
       ingestedAt: new Date().toISOString(),
     });
   }
+  // Recorded on every sync, even when nothing new was found, so the app can show its freshness.
+  state.lastSync = { at: new Date().toISOString(), comments: (body.comments || []).length, added };
   await save(env, state);
   return { added, total: state.apartments.length };
 }

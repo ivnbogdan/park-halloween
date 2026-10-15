@@ -58,6 +58,9 @@
     border: 1px solid var(--border); background: var(--surface-2); color: var(--text); }
   .actions .primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
   .error { color: var(--danger); font-size: 14px; margin-top: 8px; min-height: 1em; }
+  .sync { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;
+    font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+  .sync strong { color: var(--text); }
   .log { border-bottom: 1px solid var(--border); padding: 10px 0; }
   .log .meta { font-size: 13px; color: var(--muted); }
   .log .text { margin: 2px 0; word-break: break-word; }
@@ -150,12 +153,17 @@ function renderBlock(block) {
 
 function renderLog() {
   const back = '<button class="link back" data-act="back">← Înapoi la listă</button>';
-  if (!state.logs.length) return back + '<div class="empty">Nimic încă.</div>';
+  const fmt = (iso) => new Date(iso).toLocaleString('ro-RO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const lastSyncAt = state.lastSync?.at ||
+    state.logs.filter((l) => l.source === 'facebook').map((l) => l.ingestedAt).sort().pop();
+  const sync = `<div class="sync">Ultima sincronizare Facebook: <strong>${lastSyncAt ? fmt(lastSyncAt) : 'niciodată'}</strong>${
+    state.lastSync ? ` · ${state.lastSync.comments} comentarii citite, ${state.lastSync.added} apartamente noi` : ''}</div>`;
+  if (!state.logs.length) return back + sync + '<div class="empty">Nimic încă.</div>';
   const label = { added: 'adăugat', duplicate: 'deja în listă', ignored: 'fără apartament', removed: 'șters' };
-  return back + [...state.logs].reverse().map((l) => `<div class="log">
+  const when = (l) => l.postedAt || l.ingestedAt;
+  return back + sync + [...state.logs].sort((a, b) => when(b).localeCompare(when(a))).map((l) => `<div class="log">
       <div class="meta"><span class="tag ${l.outcome}">${label[l.outcome] || l.outcome}</span>${
-        l.source === 'facebook' ? 'Facebook' : 'Manual'} · ${
-        new Date(l.postedAt || l.ingestedAt).toLocaleString('ro-RO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+        l.source === 'facebook' ? 'Facebook' : 'Din aplicație'} · ${fmt(when(l))}</div>
       ${l.text ? `<div class="text">${esc(l.text)}</div>` : ''}
       ${l.parsed && l.source === 'facebook' ? `<div class="meta">→ ${l.parsed.block}, ${floorName(l.parsed.floor).toLowerCase()}, ap ${l.parsed.apt}</div>` : ''}
     </div>`).join('');

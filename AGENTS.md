@@ -115,7 +115,9 @@ parsed. Check the "☰ Jurnal" view in the app, or `GET <app>/api/state`.
 - One tab per block, apartments grouped by floor. Mobile-first, Romanian UI.
 - "+ Adaugă" (add) and "Editează" (delete) write to the server, so they apply for everyone.
   "Visited" marks are localStorage only, per phone.
-- "☰ Jurnal" in the header shows the ingest log.
+- "☰ Jurnal" in the header shows the log: Facebook comments and entries added/removed in the app
+  ("Din aplicație"), newest first, plus "Ultima sincronizare Facebook" = time of the last
+  `api/ingest` call (`state.lastSync`). It updates even when a sync finds nothing new.
 - Every path except `/<SECRET>/...` returns 404, with `noindex` and `no-referrer` headers.
 
 ## Deploying and admin
