@@ -91,7 +91,6 @@ async function addManual(env, body) {
   state.logs.push({
     id: logId,
     source: 'manual',
-    author: String(body.author || '').slice(0, 80) || null,
     text: `${block}, et ${floor}, ap ${apt}`,
     parsed: entry,
     outcome,
@@ -116,14 +115,24 @@ async function removeApartment(env, key) {
   return save(env, state);
 }
 
-// Body: { comments: [{ id, author, postedAt, text }] } scraped from the Facebook thread.
-// Comments already ingested (same Facebook id) are skipped, so re-running is safe.
+// Only a hash of the Facebook comment id is kept: enough to skip comments already
+// ingested, without storing anything that points back to the person who wrote it.
+async function hashId(id) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(id)));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Body: { comments: [{ id, postedAt, text }] } scraped from the Facebook thread. No author
+// names are stored, and comments without an apartment keep only their timestamp.
 async function ingest(env, body) {
   const state = await load(env);
-  const seen = new Set(state.logs.map((l) => l.fbCommentId).filter(Boolean));
+  const seen = new Set(state.logs.map((l) => l.fbHash).filter(Boolean));
   let added = 0;
   for (const c of body.comments || []) {
-    if (!c.id || seen.has(c.id)) continue;
+    if (!c.id) continue;
+    const fbHash = await hashId(c.id);
+    if (seen.has(fbHash)) continue;
+    seen.add(fbHash);
     const parsed = parseComment(c.text);
     const logId = crypto.randomUUID();
     const outcome = parsed ? upsert(state, parsed, logId) : 'ignored';
@@ -131,10 +140,9 @@ async function ingest(env, body) {
     state.logs.push({
       id: logId,
       source: 'facebook',
-      fbCommentId: c.id,
-      author: c.author || null,
+      fbHash,
       postedAt: c.postedAt || null,
-      text: String(c.text || '').slice(0, 1000),
+      text: parsed ? String(c.text || '').slice(0, 300) : null,
       parsed,
       outcome,
       ingestedAt: new Date().toISOString(),

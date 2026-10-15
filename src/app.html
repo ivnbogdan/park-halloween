@@ -16,7 +16,10 @@
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--text);
     font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  header { padding: 16px 16px 8px; }
+  header { padding: 16px 16px 8px; display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; }
+  .icon-btn { flex: none; min-width: 44px; min-height: 44px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; padding: 0 10px; }
+  .back { margin-bottom: 8px; }
   h1 { margin: 0; font-size: 22px; }
   .sub { color: var(--muted); font-size: 14px; margin-top: 2px; }
   nav { position: sticky; top: 0; z-index: 2; background: var(--bg); display: flex; gap: 6px;
@@ -32,7 +35,6 @@
   .apt { position: relative; min-width: 84px; min-height: 52px; padding: 8px 14px; border-radius: 12px;
     background: var(--surface-2); border: 1px solid var(--border); color: var(--text); font: inherit;
     font-size: 20px; font-weight: 700; cursor: pointer; }
-  .apt small { display: block; font-size: 11px; font-weight: 400; color: var(--muted); }
   .apt.visited { color: var(--done); text-decoration: line-through; background: var(--surface); }
   .apt .x { position: absolute; top: -8px; right: -8px; width: 26px; height: 26px; border-radius: 50%;
     background: var(--danger); color: #fff; font-size: 15px; line-height: 26px; text-align: center; display: none; }
@@ -65,8 +67,11 @@
 </head>
 <body>
 <header>
-  <h1>🎃 Halloween The Park</h1>
-  <div class="sub">Duminică, 1 noiembrie · de la 19:00 · apartamente care așteaptă copiii</div>
+  <div>
+    <h1>🎃 Halloween The Park</h1>
+    <div class="sub">Duminică, 1 noiembrie · de la 19:00 · apartamente care așteaptă copiii</div>
+  </div>
+  <button class="icon-btn" id="log-btn" aria-label="Jurnal">☰ Jurnal</button>
 </header>
 <nav id="tabs" role="tablist"></nav>
 <main id="view"></main>
@@ -97,6 +102,8 @@ const BLOCKS = [
 ];
 let state = { apartments: [], logs: [] };
 let tab = readPref('tab') || 'T1';
+if (!BLOCKS.some((b) => b.id === tab)) tab = 'T1';
+let showLog = false;
 let editing = false;
 let visited = new Set(JSON.parse(readPref('visited') || '[]'));
 
@@ -120,11 +127,10 @@ function render() {
   const counts = Object.fromEntries(BLOCKS.map((b) => [b.id, 0]));
   state.apartments.forEach((a) => counts[a.block]++);
   document.getElementById('tabs').innerHTML =
-    BLOCKS.map((b) => `<button role="tab" data-tab="${b.id}" aria-selected="${tab === b.id}">${b.label}<span class="count">${counts[b.id]}</span></button>`).join('') +
-    `<button role="tab" data-tab="log" aria-selected="${tab === 'log'}">Jurnal</button>`;
+    BLOCKS.map((b) => `<button role="tab" data-tab="${b.id}" aria-selected="${!showLog && tab === b.id}">${b.label}<span class="count">${counts[b.id]}</span></button>`).join('');
   const view = document.getElementById('view');
   view.className = editing ? 'editing' : '';
-  view.innerHTML = tab === 'log' ? renderLog() : renderBlock(tab);
+  view.innerHTML = showLog ? renderLog() : renderBlock(tab);
 }
 
 function renderBlock(block) {
@@ -137,32 +143,34 @@ function renderBlock(block) {
   return `<div class="toolbar"><span>${apts.length} apartamente · ${done} vizitate</span>
       <button class="link" data-act="edit">${editing ? 'Gata' : 'Editează'}</button></div>` +
     [...floors].map(([f, list]) => `<section class="floor"><h2>${floorName(f)}</h2><div class="apts">${
-      list.map((a) => `<button class="apt${visited.has(a.key) ? ' visited' : ''}" data-key="${esc(a.key)}">${a.apt}${
-        a.floorStated ? '' : '<small>etaj estimat</small>'}<span class="x" aria-label="Șterge">✕</span></button>`).join('')
+      list.map((a) => `<button class="apt${visited.has(a.key) ? ' visited' : ''}" data-key="${esc(a.key)}">${a.apt}<span class="x" aria-label="Șterge">✕</span></button>`).join('')
     }</div></section>`).join('') +
-    `<p class="hint">Atinge un apartament ca să-l marchezi vizitat (doar pe telefonul tău).</p>`;
+    `<p class="hint">Atinge un apartament ca să-l marchezi vizitat.</p>`;
 }
 
 function renderLog() {
-  if (!state.logs.length) return '<div class="empty">Nimic încă.</div>';
+  const back = '<button class="link back" data-act="back">← Înapoi la listă</button>';
+  if (!state.logs.length) return back + '<div class="empty">Nimic încă.</div>';
   const label = { added: 'adăugat', duplicate: 'deja în listă', ignored: 'fără apartament', removed: 'șters' };
-  return [...state.logs].reverse().map((l) => `<div class="log">
+  return back + [...state.logs].reverse().map((l) => `<div class="log">
       <div class="meta"><span class="tag ${l.outcome}">${label[l.outcome] || l.outcome}</span>${
-        l.source === 'facebook' ? 'Facebook' : 'Manual'}${l.author ? ' · ' + esc(l.author) : ''} · ${
+        l.source === 'facebook' ? 'Facebook' : 'Manual'} · ${
         new Date(l.postedAt || l.ingestedAt).toLocaleString('ro-RO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
-      <div class="text">${esc(l.text)}</div>
-      ${l.parsed && l.source === 'facebook' ? `<div class="meta">→ ${l.parsed.block}, ${floorName(l.parsed.floor).toLowerCase()}${l.parsed.floorStated ? '' : ' (estimat)'}, ap ${l.parsed.apt}</div>` : ''}
+      ${l.text ? `<div class="text">${esc(l.text)}</div>` : ''}
+      ${l.parsed && l.source === 'facebook' ? `<div class="meta">→ ${l.parsed.block}, ${floorName(l.parsed.floor).toLowerCase()}, ap ${l.parsed.apt}</div>` : ''}
     </div>`).join('');
 }
 
 document.getElementById('tabs').addEventListener('click', (e) => {
   const b = e.target.closest('[data-tab]');
   if (!b) return;
-  tab = b.dataset.tab; editing = false; writePref('tab', tab); render();
+  tab = b.dataset.tab; showLog = false; editing = false; writePref('tab', tab); render();
 });
+document.getElementById('log-btn').addEventListener('click', () => { showLog = !showLog; editing = false; render(); });
 
 document.getElementById('view').addEventListener('click', async (e) => {
   if (e.target.closest('[data-act="edit"]')) { editing = !editing; return render(); }
+  if (e.target.closest('[data-act="back"]')) { showLog = false; return render(); }
   const btn = e.target.closest('.apt');
   if (!btn) return;
   const key = btn.dataset.key;
@@ -183,7 +191,7 @@ fBlock.innerHTML = BLOCKS.map((b) => `<option value="${b.id}">${b.label}</option
 document.getElementById('add').addEventListener('click', () => {
   document.getElementById('form').reset();
   document.getElementById('f-error').textContent = '';
-  if (tab !== 'log') fBlock.value = tab;
+  fBlock.value = tab;
   dlg.showModal();
   document.getElementById('f-apt').focus();
 });
@@ -196,7 +204,7 @@ document.getElementById('form').addEventListener('submit', async (e) => {
       apt: document.getElementById('f-apt').value,
       floor: document.getElementById('f-floor').value,
     }) });
-    tab = fBlock.value; writePref('tab', tab);
+    tab = fBlock.value; showLog = false; writePref('tab', tab);
     dlg.close(); render();
   } catch (err) { document.getElementById('f-error').textContent = err.message; }
 });

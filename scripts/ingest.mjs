@@ -1,6 +1,6 @@
 // Pushes comments scraped from the Facebook thread into the app.
 // Usage: node scripts/ingest.mjs <app-url-with-secret> <comments.json>
-// comments.json: [{ id, author, postedAt, text }] or [[id, author, "7h", text], ...]
+// comments.json: [{ id, postedAt, text }] or [[id, "7h", text], ...] (no author names)
 // Already-ingested comment ids are skipped by the server, so re-running is safe.
 import { readFileSync } from 'node:fs';
 
@@ -17,7 +17,7 @@ const agoToIso = (ago) => {
 };
 
 const comments = JSON.parse(readFileSync(file, 'utf8')).map((c) =>
-  Array.isArray(c) ? { id: c[0], author: c[1], postedAt: agoToIso(c[2]), text: c[3] } : c,
+  Array.isArray(c) ? { id: c[0], postedAt: agoToIso(c[1]), text: c[2] } : { id: c.id, postedAt: c.postedAt, text: c.text },
 );
 
 const res = await fetch(new URL('api/ingest', appUrl.endsWith('/') ? appUrl : appUrl + '/'), {

@@ -2,7 +2,10 @@
 
 Mobile-first list of apartments that welcome trick-or-treaters, built from the comments on the
 residents' Facebook group post. One tab per block (T1, T2, T3, TP / bloc galben), grouped by floor,
-plus a log of every ingested comment and a form to add an apartment manually.
+plus a log of ingested comments (behind the "Jurnal" button) and a form to add an apartment.
+
+No personal data is stored: no author names, only a SHA-256 hash of each Facebook comment id
+(for de-duplication), and comments without an apartment keep only their timestamp.
 
 Runs as a Cloudflare Worker with the data in Workers KV (free tier).
 
@@ -33,7 +36,8 @@ The Facebook Groups API no longer exists, so comments are collected from the log
 node scripts/ingest.mjs "https://<worker-host>/<SECRET>/" comments.json
 ```
 
-Comments already ingested (same Facebook comment id) are skipped. Parsing rules live in
+`comments.json` holds `[{ id, postedAt, text }]`. Do not include author names. Comments already
+ingested (same Facebook comment id) are skipped. Parsing rules live in
 `src/parse.js`: the block is required (T1/T2/T3/TP, "bloc 1", "blocul galben"), the floor is taken
 from `et`/`etaj`/`parter` when stated, otherwise from the apartment number (ap 45 → etaj 4,
-ap 4 → parter); those are shown as "etaj estimat".
+ap 4 → parter).
