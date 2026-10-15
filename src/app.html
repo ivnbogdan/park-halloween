@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#16121c">
+<title>Halloween The Park</title>
+<style>
+  :root {
+    --bg: #16121c; --surface: #221c2b; --surface-2: #2d2538; --text: #f3eef8;
+    --muted: #a99bb8; --accent: #ff8a1f; --accent-ink: #1a0f02; --border: #3a3046;
+    --done: #5c5268; --danger: #ff5c6c;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 16px 16px 8px; }
+  h1 { margin: 0; font-size: 22px; }
+  .sub { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  nav { position: sticky; top: 0; z-index: 2; background: var(--bg); display: flex; gap: 6px;
+    padding: 8px 16px; border-bottom: 1px solid var(--border); overflow-x: auto; }
+  nav button { flex: 1 0 auto; min-height: 44px; padding: 6px 12px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; }
+  nav button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  nav .count { font-weight: 400; opacity: .75; font-size: 13px; margin-left: 4px; }
+  main { padding: 12px 16px 120px; max-width: 640px; margin: 0 auto; }
+  .floor { margin: 14px 0; }
+  .floor h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; }
+  .apts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .apt { position: relative; min-width: 84px; min-height: 52px; padding: 8px 14px; border-radius: 12px;
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text); font: inherit;
+    font-size: 20px; font-weight: 700; cursor: pointer; }
+  .apt small { display: block; font-size: 11px; font-weight: 400; color: var(--muted); }
+  .apt.visited { color: var(--done); text-decoration: line-through; background: var(--surface); }
+  .apt .x { position: absolute; top: -8px; right: -8px; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--danger); color: #fff; font-size: 15px; line-height: 26px; text-align: center; display: none; }
+  .editing .apt .x { display: block; }
+  .empty { color: var(--muted); padding: 24px 0; text-align: center; }
+  .toolbar { display: flex; gap: 8px; justify-content: space-between; align-items: center; color: var(--muted); font-size: 14px; }
+  .link { background: none; border: 0; color: var(--accent); font: inherit; font-size: 14px; cursor: pointer; padding: 8px 0; }
+  .fab { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); min-height: 52px; padding: 0 20px;
+    border-radius: 26px; border: 0; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 700;
+    box-shadow: 0 6px 20px rgba(0,0,0,.4); cursor: pointer; }
+  dialog { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); color: var(--text);
+    width: min(420px, calc(100vw - 32px)); padding: 20px; }
+  dialog::backdrop { background: rgba(0,0,0,.6); }
+  dialog h3 { margin: 0 0 12px; }
+  label { display: block; font-size: 14px; color: var(--muted); margin: 10px 0 4px; }
+  select, input { width: 100%; min-height: 46px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--text); font: inherit; font-size: 18px; }
+  .hint { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .actions { display: flex; gap: 8px; margin-top: 18px; }
+  .actions button { flex: 1; min-height: 46px; border-radius: 10px; font: inherit; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text); }
+  .actions .primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .error { color: var(--danger); font-size: 14px; margin-top: 8px; min-height: 1em; }
+  .log { border-bottom: 1px solid var(--border); padding: 10px 0; }
+  .log .meta { font-size: 13px; color: var(--muted); }
+  .log .text { margin: 2px 0; word-break: break-word; }
+  .tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; margin-right: 6px; background: var(--surface-2); }
+  .tag.added { background: #2f5c2f; } .tag.duplicate { background: #5c4a1f; } .tag.removed { background: #5c1f2a; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎃 Halloween The Park</h1>
+  <div class="sub">Duminică, 1 noiembrie · de la 19:00 · apartamente care așteaptă copiii</div>
+</header>
+<nav id="tabs" role="tablist"></nav>
+<main id="view"></main>
+<button class="fab" id="add">+ Adaugă</button>
+
+<dialog id="dlg">
+  <form id="form" method="dialog">
+    <h3>Adaugă apartament</h3>
+    <label for="f-block">Bloc</label>
+    <select id="f-block"></select>
+    <label for="f-apt">Apartament</label>
+    <input id="f-apt" type="number" inputmode="numeric" min="1" max="999" required>
+    <label for="f-floor">Etaj</label>
+    <input id="f-floor" type="number" inputmode="numeric" min="0" max="30" placeholder="automat din nr. apartamentului">
+    <div class="hint">0 = parter. Gol = se deduce din număr (ap 45 → etaj 4).</div>
+    <div class="error" id="f-error"></div>
+    <div class="actions">
+      <button type="button" id="f-cancel">Renunță</button>
+      <button type="submit" class="primary">Salvează</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+const BLOCKS = [
+  { id: 'T1', label: 'T1' }, { id: 'T2', label: 'T2' }, { id: 'T3', label: 'T3' },
+  { id: 'TP', label: 'TP · galben' },
+];
+let state = { apartments: [], logs: [] };
+let tab = readPref('tab') || 'T1';
+let editing = false;
+let visited = new Set(JSON.parse(readPref('visited') || '[]'));
+
+function readPref(k) { try { return localStorage.getItem('ph-' + k); } catch { return null; } }
+function writePref(k, v) { try { localStorage.setItem('ph-' + k, v); } catch {} }
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const floorName = (f) => (f === 0 ? 'Parter' : 'Etaj ' + f);
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json' } });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Eroare ' + res.status);
+  return data;
+}
+
+async function refresh() {
+  try { state = await api('api/state'); render(); } catch (e) { console.warn(e); }
+}
+
+function render() {
+  const counts = Object.fromEntries(BLOCKS.map((b) => [b.id, 0]));
+  state.apartments.forEach((a) => counts[a.block]++);
+  document.getElementById('tabs').innerHTML =
+    BLOCKS.map((b) => `<button role="tab" data-tab="${b.id}" aria-selected="${tab === b.id}">${b.label}<span class="count">${counts[b.id]}</span></button>`).join('') +
+    `<button role="tab" data-tab="log" aria-selected="${tab === 'log'}">Jurnal</button>`;
+  const view = document.getElementById('view');
+  view.className = editing ? 'editing' : '';
+  view.innerHTML = tab === 'log' ? renderLog() : renderBlock(tab);
+}
+
+function renderBlock(block) {
+  const apts = state.apartments.filter((a) => a.block === block);
+  if (!apts.length) return `<div class="empty">Niciun apartament înscris în ${esc(block)} încă.</div>`;
+  const floors = new Map();
+  apts.sort((a, b) => a.floor - b.floor || a.apt - b.apt)
+    .forEach((a) => floors.set(a.floor, [...(floors.get(a.floor) || []), a]));
+  const done = apts.filter((a) => visited.has(a.key)).length;
+  return `<div class="toolbar"><span>${apts.length} apartamente · ${done} vizitate</span>
+      <button class="link" data-act="edit">${editing ? 'Gata' : 'Editează'}</button></div>` +
+    [...floors].map(([f, list]) => `<section class="floor"><h2>${floorName(f)}</h2><div class="apts">${
+      list.map((a) => `<button class="apt${visited.has(a.key) ? ' visited' : ''}" data-key="${esc(a.key)}">${a.apt}${
+        a.floorStated ? '' : '<small>etaj estimat</small>'}<span class="x" aria-label="Șterge">✕</span></button>`).join('')
+    }</div></section>`).join('') +
+    `<p class="hint">Atinge un apartament ca să-l marchezi vizitat (doar pe telefonul tău).</p>`;
+}
+
+function renderLog() {
+  if (!state.logs.length) return '<div class="empty">Nimic încă.</div>';
+  const label = { added: 'adăugat', duplicate: 'deja în listă', ignored: 'fără apartament', removed: 'șters' };
+  return [...state.logs].reverse().map((l) => `<div class="log">
+      <div class="meta"><span class="tag ${l.outcome}">${label[l.outcome] || l.outcome}</span>${
+        l.source === 'facebook' ? 'Facebook' : 'Manual'}${l.author ? ' · ' + esc(l.author) : ''} · ${
+        new Date(l.postedAt || l.ingestedAt).toLocaleString('ro-RO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+      <div class="text">${esc(l.text)}</div>
+      ${l.parsed && l.source === 'facebook' ? `<div class="meta">→ ${l.parsed.block}, ${floorName(l.parsed.floor).toLowerCase()}${l.parsed.floorStated ? '' : ' (estimat)'}, ap ${l.parsed.apt}</div>` : ''}
+    </div>`).join('');
+}
+
+document.getElementById('tabs').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-tab]');
+  if (!b) return;
+  tab = b.dataset.tab; editing = false; writePref('tab', tab); render();
+});
+
+document.getElementById('view').addEventListener('click', async (e) => {
+  if (e.target.closest('[data-act="edit"]')) { editing = !editing; return render(); }
+  const btn = e.target.closest('.apt');
+  if (!btn) return;
+  const key = btn.dataset.key;
+  if (editing) {
+    if (!e.target.closest('.x')) return;
+    try { state = await api('api/apartments/' + encodeURIComponent(key), { method: 'DELETE' }); render(); }
+    catch (err) { console.warn(err); }
+    return;
+  }
+  visited.has(key) ? visited.delete(key) : visited.add(key);
+  writePref('visited', JSON.stringify([...visited]));
+  render();
+});
+
+const dlg = document.getElementById('dlg');
+const fBlock = document.getElementById('f-block');
+fBlock.innerHTML = BLOCKS.map((b) => `<option value="${b.id}">${b.label}</option>`).join('');
+document.getElementById('add').addEventListener('click', () => {
+  document.getElementById('form').reset();
+  document.getElementById('f-error').textContent = '';
+  if (tab !== 'log') fBlock.value = tab;
+  dlg.showModal();
+  document.getElementById('f-apt').focus();
+});
+document.getElementById('f-cancel').addEventListener('click', () => dlg.close());
+document.getElementById('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    state = await api('api/apartments', { method: 'POST', body: JSON.stringify({
+      block: fBlock.value,
+      apt: document.getElementById('f-apt').value,
+      floor: document.getElementById('f-floor').value,
+    }) });
+    tab = fBlock.value; writePref('tab', tab);
+    dlg.close(); render();
+  } catch (err) { document.getElementById('f-error').textContent = err.message; }
+});
+
+refresh();
+setInterval(refresh, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+</script>
+</body>
+</html>
