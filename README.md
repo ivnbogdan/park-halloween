@@ -29,6 +29,8 @@ npx wrangler deploy
 
 ## Syncing new Facebook comments
 
+Full step-by-step instructions (Facebook URL, the "All comments" catch, parsing rules): see [AGENTS.md](AGENTS.md).
+
 The Facebook Groups API no longer exists, so comments are collected from the logged-in browser
 (e.g. with Claude in Chrome) and pushed in:
 
