@@ -122,15 +122,19 @@ async function hashId(id) {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Body: { comments: [{ id, postedAt, text }] } scraped from the Facebook thread. No author
-// names are stored, and comments without an apartment keep only their timestamp.
+// Body: { comments: [{ id, postedAt, text }], snapshot } scraped from the Facebook thread.
+// No author names are stored, and comments without an apartment keep only their timestamp.
+// snapshot: true means `comments` is the complete thread; apartments whose comment has since been
+// deleted on Facebook are then removed (unless another comment or an in-app entry still claims them).
 async function ingest(env, body) {
   const state = await load(env);
+  const comments = (body.comments || []).filter((c) => c.id);
+  const hashes = await Promise.all(comments.map((c) => hashId(c.id)));
   const seen = new Set(state.logs.map((l) => l.fbHash).filter(Boolean));
+  const removed = body.snapshot ? removeDeleted(state, new Set(hashes)) : [];
   let added = 0;
-  for (const c of body.comments || []) {
-    if (!c.id) continue;
-    const fbHash = await hashId(c.id);
+  for (const [i, c] of comments.entries()) {
+    const fbHash = hashes[i];
     if (seen.has(fbHash)) continue;
     seen.add(fbHash);
     const parsed = parseComment(c.text);
@@ -149,7 +153,37 @@ async function ingest(env, body) {
     });
   }
   // Recorded on every sync, even when nothing new was found, so the app can show its freshness.
-  state.lastSync = { at: new Date().toISOString(), comments: (body.comments || []).length, added };
+  state.lastSync = {
+    at: new Date().toISOString(), comments: comments.length, added, removed: removed.length, snapshot: !!body.snapshot,
+  };
   await save(env, state);
-  return { added, total: state.apartments.length };
+  return { added, removed, total: state.apartments.length };
+}
+
+function removeDeleted(state, present) {
+  const fbLogs = state.logs.filter((l) => l.fbHash && !l.deletedAt);
+  const gone = fbLogs.filter((l) => !present.has(l.fbHash));
+  // A partial scrape would look like mass deletion; refuse rather than wipe the list.
+  if (gone.length > Math.max(3, fbLogs.length / 2)) {
+    throw new Error(`Snapshot is missing ${gone.length} of ${fbLogs.length} known comments; not removing anything`);
+  }
+  const now = new Date().toISOString();
+  gone.forEach((l) => { l.deletedAt = now; });
+  const goneIds = new Set(gone.map((l) => l.id));
+  // Keys still claimed by a comment that is present in the thread.
+  const claimed = new Set(fbLogs.filter((l) => present.has(l.fbHash) && l.parsed)
+    .map((l) => aptKey(l.parsed.block, l.parsed.apt)));
+  const removed = state.apartments.filter((a) => goneIds.has(a.logId) && !claimed.has(a.key));
+  state.apartments = state.apartments.filter((a) => !removed.includes(a));
+  for (const a of removed) {
+    state.logs.push({
+      id: crypto.randomUUID(),
+      source: 'facebook',
+      text: `Comentariu șters pe Facebook: ${a.block}, et ${a.floor}, ap ${a.apt}`,
+      parsed: null,
+      outcome: 'removed',
+      ingestedAt: now,
+    });
+  }
+  return removed.map((a) => a.key);
 }

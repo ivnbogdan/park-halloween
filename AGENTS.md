@@ -63,13 +63,18 @@ window.__c = [...root.querySelectorAll('[role="article"]')].map(a => {
   const id = (link.match(/reply_comment_id=(\d+)/) || link.match(/comment_id=(\d+)/) || [])[1];
   const ago = ((a.getAttribute('aria-label') || '').match(/(\d+) (minute|hour|day)s? ago$/) || []);
   const text = [...a.querySelectorAll('div[dir="auto"]')].filter(d => d.closest('[role="article"]') === a).map(d => d.innerText).join(' ');
-  return [id, ago[1] ? ago[1] + ago[2][0] : null, text];   // [id, "7h", text]; no author
+  // Keep text only when it can name an apartment; discussion (often starting with a name) is blanked.
+  const norm = text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const maybeApt = /\bt\s*[123p]\b|\bbloc|\bgalben/.test(norm) && /\d/.test(norm);
+  return [id, ago[1] ? ago[1] + ago[2][0] : null, maybeApt ? text.slice(0, 200) : ''];   // no author
 });
-window.__c.length
+JSON.stringify(window.__c.filter(c => c[2]).length) + ' with text / ' + window.__c.length
 ```
 
 The tool truncates large return values (around 1000 characters), so read `window.__c` in chunks,
-for example `JSON.stringify(window.__c.slice(0, 8))`, then `slice(8, 16)`, and so on.
+for example `JSON.stringify(window.__c.slice(0, 12))`, then `slice(12, 24)`, and so on.
+**Send every comment, including the blanked ones**: a full snapshot is how deleted comments
+are detected (step 3). Check the kept texts for a leading person's name and strip it.
 
 Notes:
 - Replies to a comment are articles too. Include them, since a reply can name an apartment.
@@ -83,9 +88,17 @@ Notes:
 Write the array to a scratch file and push it:
 
 ```sh
-node scripts/ingest.mjs "https://park-halloween.ivnbogdan.workers.dev/<SECRET>/" /path/to/comments.json
-# -> 200 {"added":N,"total":M}
+node scripts/ingest.mjs "https://park-halloween.ivnbogdan.workers.dev/<SECRET>/" /path/to/comments.json --snapshot
+# -> 200 {"added":N,"removed":["T2-99"],"total":M}
 ```
+
+**Deleted comments must disappear from the app (user rule).** Pass `--snapshot` only when the
+file holds every comment in the thread, that is, when the loaded article count equals Facebook's
+"N comments" counter. The server then removes apartments whose comment no longer exists, unless
+another comment still in the thread names the same apartment. Apartments added in the app are
+never removed this way. If you could not load everything, leave out `--snapshot` (adds only) and
+tell the user. As a safety net, the server refuses a snapshot that would drop more than half of
+the known comments.
 
 `comments.json` is `[[id, "7h" | null, text], ...]` or `[{ id, postedAt, text }]`. Re-sending
 everything is safe: comments already ingested (same id) are skipped. Report to the user how many
