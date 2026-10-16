@@ -1,7 +1,7 @@
 # Agent instructions: re-syncing the Facebook thread
 
 This app lists the apartments at The Park that welcome trick-or-treaters on
-**Sunday, 1 November, from 19:00**. Neighbours register by commenting on a Facebook group post.
+**Saturday, 31 October, from 19:00** (moved from Sunday 1 November). Neighbours register by commenting on a Facebook group post.
 Your usual job here is to pull new comments from that post into the app.
 
 ## Ground rules
