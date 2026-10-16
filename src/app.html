@@ -157,7 +157,8 @@ function renderLog() {
   const lastSyncAt = state.lastSync?.at ||
     state.logs.filter((l) => l.source === 'facebook').map((l) => l.ingestedAt).sort().pop();
   const sync = `<div class="sync">Ultima sincronizare Facebook: <strong>${lastSyncAt ? fmt(lastSyncAt) : 'niciodată'}</strong>${
-    state.lastSync ? ` · ${state.lastSync.comments} comentarii citite, ${state.lastSync.added} apartamente noi` : ''}</div>`;
+    state.lastSync ? ` · ${state.lastSync.comments} comentarii citite, ${state.lastSync.added} apartamente noi${
+    state.lastSync.removed ? `, ${state.lastSync.removed} șterse` : ''}` : ''}</div>`;
   if (!state.logs.length) return back + sync + '<div class="empty">Nimic încă.</div>';
   const label = { added: 'adăugat', duplicate: 'deja în listă', ignored: 'fără apartament', removed: 'șters' };
   const when = (l) => l.postedAt || l.ingestedAt;
