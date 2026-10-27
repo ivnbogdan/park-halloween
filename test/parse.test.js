@@ -25,3 +25,13 @@ test('ignores discussion comments', () => {
   assert.equal(parseComment('Ce ziceți de 1 noiembrie, duminică?'), null);
   assert.equal(parseComment('Done.'), null);
 });
+
+test('opt-out comments', async () => {
+  const { isOptOut } = await import('../src/parse.js');
+  assert.equal(isOptOut('Hey! Din pacate noi sambata nu vom mai fi acasa \n t2,et1,ap11'), true);
+  assert.equal(isOptOut('Nu mai participam, T1 ap 10'), true);
+  assert.equal(isOptOut('Scoateti-ne va rog, T3 ap 84'), true);
+  assert.equal(isOptOut('T2, et 5, Ap 53'), false);
+  assert.equal(isOptOut('Bloc T2, ap 59, votez pt 31 oct'), false);
+  assert.equal(isOptOut('Yuhuuuu! T2, ap 23'), false);
+});

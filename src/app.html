@@ -65,7 +65,7 @@
   .log .meta { font-size: 13px; color: var(--muted); }
   .log .text { margin: 2px 0; word-break: break-word; }
   .tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; margin-right: 6px; background: var(--surface-2); }
-  .tag.added { background: #2f5c2f; } .tag.duplicate { background: #5c4a1f; } .tag.removed { background: #5c1f2a; }
+  .tag.added { background: #2f5c2f; } .tag.duplicate { background: #5c4a1f; } .tag.removed, .tag.optout { background: #5c1f2a; }
 </style>
 </head>
 <body>
@@ -160,7 +160,7 @@ function renderLog() {
     state.lastSync ? ` · ${state.lastSync.comments} comentarii citite, ${state.lastSync.added} apartamente noi${
     state.lastSync.removed ? `, ${state.lastSync.removed} șterse` : ''}` : ''}</div>`;
   if (!state.logs.length) return back + sync + '<div class="empty">Nimic încă.</div>';
-  const label = { added: 'adăugat', duplicate: 'deja în listă', ignored: 'fără apartament', removed: 'șters' };
+  const label = { added: 'adăugat', duplicate: 'deja în listă', ignored: 'fără apartament', removed: 'șters', optout: 'retras' };
   const when = (l) => l.postedAt || l.ingestedAt;
   return back + sync + [...state.logs].sort((a, b) => when(b).localeCompare(when(a))).map((l) => `<div class="log">
       <div class="meta"><span class="tag ${l.outcome}">${label[l.outcome] || l.outcome}</span>${

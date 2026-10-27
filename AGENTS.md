@@ -119,6 +119,10 @@ parsed. Check the "☰ Jurnal" view in the app, or `GET <app>/api/state`.
     the deduction is only a guess, so mention it to the user.
   - The TP / bloc galben numbering does not follow the pattern either (ap 38 is on etaj 6). Trust
     the stated floor.
+- **Opt-outs:** a comment naming an apartment plus "nu vom mai fi acasă", "nu mai participăm",
+  "ne retragem", "scoateți-ne" and similar (`isOptOut` in `src/parse.js`) removes that apartment,
+  logged as "retras" (withdrawn). Read new comments yourself as well: if one is clearly an
+  opt-out the regex misses, extend `isOptOut` (with a test) before ingesting.
 - Apartments are unique per block (`T2-13` and `T1-13` are different). A repeat is logged as
   "duplicate" and not added again.
 - Add new phrasings to `test/parse.test.js` and run `npm test` before deploying parser changes.

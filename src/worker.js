@@ -1,4 +1,4 @@
-import { parseComment, floorFromApt, BLOCKS } from './parse.js';
+import { parseComment, isOptOut, floorFromApt, BLOCKS } from './parse.js';
 import page from './app.html';
 
 // Everything lives under /<SECRET>/. Any other path is a plain 404, so the
@@ -133,13 +133,24 @@ async function ingest(env, body) {
   const seen = new Set(state.logs.map((l) => l.fbHash).filter(Boolean));
   const removed = body.snapshot ? removeDeleted(state, new Set(hashes)) : [];
   let added = 0;
+  const optedOut = [];
   for (const [i, c] of comments.entries()) {
     const fbHash = hashes[i];
     if (seen.has(fbHash)) continue;
     seen.add(fbHash);
     const parsed = parseComment(c.text);
     const logId = crypto.randomUUID();
-    const outcome = parsed ? upsert(state, parsed, logId) : 'ignored';
+    let outcome = 'ignored';
+    if (parsed && isOptOut(c.text)) {
+      // "We won't be home after all": take the apartment off the list, whoever added it.
+      const key = aptKey(parsed.block, parsed.apt);
+      const before = state.apartments.length;
+      state.apartments = state.apartments.filter((a) => a.key !== key);
+      outcome = 'optout';
+      if (state.apartments.length < before) optedOut.push(key);
+    } else if (parsed) {
+      outcome = upsert(state, parsed, logId);
+    }
     if (outcome === 'added') added++;
     state.logs.push({
       id: logId,
@@ -154,10 +165,11 @@ async function ingest(env, body) {
   }
   // Recorded on every sync, even when nothing new was found, so the app can show its freshness.
   state.lastSync = {
-    at: new Date().toISOString(), comments: comments.length, added, removed: removed.length, snapshot: !!body.snapshot,
+    at: new Date().toISOString(), comments: comments.length, added, removed: removed.length + optedOut.length,
+    snapshot: !!body.snapshot,
   };
   await save(env, state);
-  return { added, removed, total: state.apartments.length };
+  return { added, removed, optedOut, total: state.apartments.length };
 }
 
 function removeDeleted(state, present) {
@@ -171,7 +183,7 @@ function removeDeleted(state, present) {
   gone.forEach((l) => { l.deletedAt = now; });
   const goneIds = new Set(gone.map((l) => l.id));
   // Keys still claimed by a comment that is present in the thread.
-  const claimed = new Set(fbLogs.filter((l) => present.has(l.fbHash) && l.parsed)
+  const claimed = new Set(fbLogs.filter((l) => present.has(l.fbHash) && l.parsed && l.outcome !== 'optout')
     .map((l) => aptKey(l.parsed.block, l.parsed.apt)));
   const removed = state.apartments.filter((a) => goneIds.has(a.logId) && !claimed.has(a.key));
   state.apartments = state.apartments.filter((a) => !removed.includes(a));

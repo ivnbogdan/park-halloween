@@ -59,3 +59,14 @@ export function parseComment(text) {
   if (!floorStated) floor = floorFromApt(apt);
   return { block, floor, apt, floorStated };
 }
+
+// "Din pacate nu vom mai fi acasa", "nu mai participam", "ne retragem", "scoateti-ne" ...:
+// the comment names an apartment that should be taken OFF the list.
+export function isOptOut(text) {
+  const s = (text || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  return [
+    /\bnu\s+(?:mai\s+)?(?:vom|o\s+sa|suntem|sunt|voi|vor|va)\b[^.!?]{0,30}\b(?:fi\s+)?acasa\b/,
+    /\bnu\s+(?:mai\s+)?(?:participam|participa|putem|venim|deschidem)\b/,
+    /\b(?:ne\s+retragem|retrag|anulam|anulat|scoate(?:ti)?(?:-ne|-ma)?|sterge(?:ti)?(?:-ne|-ma)?)\b/,
+  ].some((re) => re.test(s));
+}
