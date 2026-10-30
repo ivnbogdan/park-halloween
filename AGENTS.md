@@ -33,7 +33,9 @@ Your usual job here is to pull new comments from that post into the app.
    including potential spam"). Do not use "Newest", which can also hide comments.
 3. Load the rest: scroll the dialog's scroll container to the bottom several times, and click
    every "View N replies" / "View more comments" / "See more" button until none remain.
-4. **Check the count.** The number of `[role="article"]` elements in the dialog must equal the
+4. **Check the count.** (Since late Oct the counter may render as a comment icon plus a bare number,
+   e.g. "57", not "57 comments"; scroll the dialog to the top and look for it next to the reactions.)
+   The number of `[role="article"]` elements in the dialog must equal the
    "N comments" counter under the post. On the first sync that was 28 = 28. If they differ, keep
    expanding.
 
