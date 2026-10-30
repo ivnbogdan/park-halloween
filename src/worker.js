@@ -82,7 +82,7 @@ async function addManual(env, body) {
   if (!Number.isInteger(apt) || apt < 1 || apt > 999) throw new Error('Invalid apartment number');
   const floorStated = body.floor !== '' && body.floor !== null && body.floor !== undefined;
   const floor = floorStated ? Number(body.floor) : floorFromApt(apt);
-  if (!Number.isInteger(floor) || floor < 0 || floor > 30) throw new Error('Invalid floor');
+  if (!Number.isInteger(floor) || floor < -2 || floor > 30) throw new Error('Invalid floor');
 
   const state = await load(env);
   const entry = { block, floor, apt, floorStated };

@@ -14,6 +14,8 @@ const cases = [
   ['Blocul Galben, Etaj 6, ap 38', { block: 'TP', floor: 6, apt: 38, floorStated: true }],
   ['Blocul Galben - parter - ap 1', { block: 'TP', floor: 0, apt: 1, floorStated: true }],
   ['TP ap 4', { block: 'TP', floor: 0, apt: 4, floorStated: false }],
+  ['T3, et -1, ap 130', { block: 'T3', floor: -1, apt: 130, floorStated: true }],
+  ['T1 subsol ap 2', { block: 'T1', floor: -1, apt: 2, floorStated: true }],
   ['T3, et. 5, ap. 50', { block: 'T3', floor: 5, apt: 50, floorStated: true }],
 ];
 

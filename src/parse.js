@@ -33,10 +33,13 @@ export function parseComment(text) {
   if (!block) return null;
 
   let floor = null;
-  const floorMatch = s.match(/\bet(?:aj(?:ul)?)?\.?\s*(\d{1,2})\b/);
+  const floorMatch = s.match(/\bet(?:aj(?:ul)?)?\.?\s*(-\s*)?(\d{1,2})\b/);
   if (floorMatch) {
-    floor = Number(floorMatch[1]);
+    floor = Number(floorMatch[2]) * (floorMatch[1] ? -1 : 1);
     s = s.replace(floorMatch[0], ' ');
+  } else if (/\b(?:subsol|demisol)\b/.test(s)) {
+    floor = -1;
+    s = s.replace(/\b(?:subsol|demisol)\b/, ' ');
   } else if (/\bparter\b/.test(s)) {
     floor = 0;
     s = s.replace(/\bparter\b/, ' ');

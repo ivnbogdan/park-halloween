@@ -121,6 +121,7 @@ parsed. Check the "☰ Jurnal" view in the app, or `GET <app>/api/state`.
     the deduction is only a guess, so mention it to the user.
   - The TP / bloc galben numbering does not follow the pattern either (ap 38 is on etaj 6). Trust
     the stated floor.
+- **Basement:** `et -1`, "subsol" or "demisol" → floor -1 (e.g. T3 ap 130 is on etaj -1, not 13).
 - **Opt-outs:** a comment naming an apartment plus "nu vom mai fi acasă", "nu mai participăm",
   "ne retragem", "scoateți-ne" and similar (`isOptOut` in `src/parse.js`) removes that apartment,
   logged as "retras" (withdrawn). Read new comments yourself as well: if one is clearly an

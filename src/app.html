@@ -88,8 +88,8 @@
     <label for="f-apt">Apartament</label>
     <input id="f-apt" type="number" inputmode="numeric" min="1" max="999" required>
     <label for="f-floor">Etaj</label>
-    <input id="f-floor" type="number" inputmode="numeric" min="0" max="30" placeholder="automat din nr. apartamentului">
-    <div class="hint">0 = parter. Gol = se deduce din număr (ap 45 → etaj 4).</div>
+    <input id="f-floor" type="number" min="-2" max="30" placeholder="automat din nr. apartamentului">
+    <div class="hint">0 = parter, -1 = subsol. Gol = se deduce din număr (ap 45 → etaj 4).</div>
     <div class="error" id="f-error"></div>
     <div class="actions">
       <button type="button" id="f-cancel">Renunță</button>
@@ -160,7 +160,7 @@ function renderLog() {
     state.lastSync ? ` · ${state.lastSync.comments} comentarii citite, ${state.lastSync.added} apartamente noi${
     state.lastSync.removed ? `, ${state.lastSync.removed} șterse` : ''}` : ''}</div>`;
   if (!state.logs.length) return back + sync + '<div class="empty">Nimic încă.</div>';
-  const label = { added: 'adăugat', duplicate: 'deja în listă', ignored: 'fără apartament', removed: 'șters', optout: 'retras' };
+  const label = { added: 'adăugat', duplicate: 'deja în listă', ignored: 'fără apartament', removed: 'șters', optout: 'retras', edited: 'corectat' };
   const when = (l) => l.postedAt || l.ingestedAt;
   return back + sync + [...state.logs].sort((a, b) => when(b).localeCompare(when(a))).map((l) => `<div class="log">
       <div class="meta"><span class="tag ${l.outcome}">${label[l.outcome] || l.outcome}</span>${
