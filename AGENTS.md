@@ -6,6 +6,22 @@
 > `wrangler.toml`, `npx wrangler secret put SECRET`, `npx wrangler deploy`. Never put real
 > apartment numbers in the repo; examples use mock 9xx numbers.
 
+## To do before bringing it back next year: printable export
+
+Some neighbours preferred to print the list and walk around with a sheet instead of using the
+app. Before the next event, add an export button (e.g. next to "☰ Jurnal") offering:
+
+- **PDF / Print:** a print-friendly view, A4 portrait. One section per block (T1, T2, T3,
+  TP · galben), apartments grouped by floor (highest floor first or ascending, matching the app),
+  with a tick box next to each apartment for marking visited ones by hand. Show the event date and
+  "Actualizat la <time of last sync>" at the top. A `@media print` stylesheet plus `window.print()`
+  is enough (the browser's "Save as PDF" covers the PDF case), so no PDF library is needed.
+- **CSV:** columns `bloc,etaj,apartament`, sorted by block, floor, apartment, UTF-8 with a BOM so
+  Excel shows the diacritics correctly. Generate it client-side from `api/state`.
+
+Export only block, floor and apartment number: no comment text, no log, nothing else. Like the
+app itself, the export is available only behind the secret link.
+
 This app lists the apartments at The Park that welcome trick-or-treaters on
 **Saturday, 31 October, from 19:00** (moved from Sunday 1 November). Neighbours register by commenting on a Facebook group post.
 Your usual job here is to pull new comments from that post into the app.
